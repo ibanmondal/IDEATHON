@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NutriSense AI - Smart Food Choice Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Colors ensuring >= 4.5:1 contrast on white/light-gray backgrounds */
+            --bg-color: #f8fafc;
+            --surface-color: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --primary-accent: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success-color: #059669; /* Green, good contrast */
+            --warning-color: #b45309; /* Dark orange/yellow for contrast */
+            --danger-color: #dc2626;  /* Red, good contrast */
+            --border-color: #e2e8f0;
+            --focus-ring: #60a5fa;
+            
+            --radius-md: 0.75rem;
+            --radius-lg: 1.25rem;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-size: 16px;
+        }
+
+        /* Focus states for accessibility */
+        *:focus-visible {
+            outline: 3px solid var(--focus-ring);
+            outline-offset: 2px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--surface-color) 0%, #f1f5f9 100%);
+            padding: 2rem 1.5rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        header h1 {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: var(--primary-accent);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+
+        header p {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        main {
+            flex: 1;
+            padding: 2rem 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 1024px) {
+            main {
+                grid-template-columns: 1fr 1fr;
+                align-items: start;
+            }
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            background-color: var(--surface-color);
+            color: var(--text-primary);
+        }
+
+        input[type="text"]:focus, select:focus, textarea:focus {
+            border-color: var(--primary-accent);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            outline: none;
+        }
+
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--primary-accent);
+            color: white;
+            border: none;
+            padding: 0.875rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            background-color: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loader {
+            display: none;
+            width: 1.5rem;
+            height: 1.5rem;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 0.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Results Area */
+        #results-container {
+            display: none;
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .score-display {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .score-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: white;
+            box-shadow: var(--shadow-sm);
+            transition: background-color 0.3s ease;
+        }
+
+        .score-details h3 {
+            margin-bottom: 0.25rem;
+        }
+
+        .nutrition-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .nutrition-card {
+            background-color: var(--bg-color);
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .nutrition-card .value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary-accent);
+        }
+
+        .nutrition-card .label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .feedback-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .feedback-section h4 {
+            font-size: 1.125rem;
+            margin-bottom: 0.75rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .feedback-section ul {
+            list-style-position: inside;
+            padding-left: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .feedback-section li {
+            margin-bottom: 0.5rem;
+        }
+
+        .recommendation {
+            background-color: #eff6ff;
+            border-left: 4px solid var(--primary-accent);
+            padding: 1rem 1.5rem;
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+            color: #1e3a8a;
+            font-weight: 500;
+        }
+
+        /* History Area */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .history-item {
+            background-color: var(--bg-color);
+            padding: 1rem 1.25rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item-info h4 {
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+            color: var(--text-primary);
+        }
+        
+        .history-item-info p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: capitalize;
+        }
+
+        .history-score {
+            font-weight: 700;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.875rem;
+        }
+
+        /* Error messages */
+        #error-message {
+            color: var(--danger-color);
+            background-color: #fef2f2;
+            padding: 1rem;
+            border-radius: var(--radius-md);
+            border: 1px solid #fecaca;
+            margin-bottom: 1.5rem;
+            display: none;
+            font-weight: 500;
+        }
+
+        /* Dashboard Styles */
+        .dashboard-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-bottom: 0;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dashboard-header h2 {
+            font-size: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(145deg, var(--surface-color), #f8fafc);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+        }
+
+        .stat-card.health::before { background-color: var(--primary-accent); }
+        .stat-card.trend::before { background-color: var(--success-color); }
+        .stat-card.best::before { background-color: #f59e0b; }
+        .stat-card.worst::before { background-color: var(--danger-color); }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .stat-subtext {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0;
+            grid-column: 1 / -1;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 1rem 1.5rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
+            width: auto;
+        }
+
+        .tab-btn.active {
+            color: var(--primary-accent);
+            border-bottom-color: var(--primary-accent);
+        }
+
+        .tab-content {
+            display: none;
+            grid-column: 1 / -1;
+        }
+
+        .tab-content.active {
+            display: grid;
+            gap: 2rem;
+            grid-template-columns: 1fr;
+        }
+
+        @media (min-width: 1024px) {
+            .tab-content.active {
+                grid-template-columns: 1fr 1fr;
+                align-items: start;
+            }
+            .tab-content.active.single-col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--surface-color);
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>NutriSense AI</h1>
+        <p>Your intelligent companion for healthier food choices and better eating habits.</p>
+    </header>
+
+    <main>
+        <div class="tabs" aria-label="Application Tabs">
+            <button class="tab-btn active" id="btn-log-meal">Log Meal</button>
+            <button class="tab-btn" id="btn-pantry">Pantry Chef 👨‍🍳</button>
+        </div>
+
+        <!-- TAB 1: Log Meal -->
+        <div id="tab-log-meal" class="tab-content active">
+            <!-- Left Column: Input Form -->
+            <section class="card" aria-labelledby="input-heading">
+            <h2 id="input-heading">Log Your Meal</h2>
+            
+            <div id="error-message" aria-live="assertive" role="alert"></div>
+
+            <form id="meal-form" novalidate>
+                <div class="form-group">
+                    <label for="meal_type">Meal Type</label>
+                    <select id="meal_type" name="meal_type" aria-required="true" aria-label="Meal Type">
+                        <option value="breakfast">Breakfast</option>
+                        <option value="lunch">Lunch</option>
+                        <option value="dinner">Dinner</option>
+                        <option value="snack">Snack</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="meal_description">What did you eat?</label>
+                    <textarea id="meal_description" name="meal_description" rows="4" 
+                              placeholder="e.g., A bowl of oatmeal with blueberries and a cup of black coffee"
+                              aria-required="true" aria-describedby="desc-help" aria-label="Meal Description"></textarea>
+                    <p id="desc-help" style="font-size: 0.875rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                        Be specific for a more accurate nutritional analysis.
+                    </p>
+                </div>
+
+                <button type="submit" id="submit-btn" aria-label="Analyze and log meal">
+                    <span id="btn-text">Analyze Meal</span>
+                    <div class="loader" id="loader" aria-label="Loading analysis" role="status"></div>
+                </button>
+            </form>
+        </section>
+
+        <!-- Right Column: Results & History -->
+        <div style="display: flex; flex-direction: column; gap: 2rem;">
+            <!-- Dashboard Summary -->
+            <section class="dashboard-container" aria-labelledby="dashboard-heading">
+                <div class="dashboard-header">
+                    <h2 id="dashboard-heading">Habit Dashboard</h2>
+                </div>
+                <div class="dashboard-grid" id="dashboard-grid" aria-live="polite">
+                    <p style="color: var(--text-secondary);">Loading summary...</p>
+                </div>
+            </section>
+
+            <!-- Analysis Results (Hidden initially) -->
+            <section class="card" id="results-container" aria-live="polite" aria-labelledby="results-heading">
+                <h2 id="results-heading">Analysis Results</h2>
+                
+                <div class="score-display">
+                    <div class="score-circle" id="health-score-badge" aria-label="Overall Health Score">
+                        --
+                    </div>
+                    <div class="score-details">
+                        <h3 id="score-text">Waiting for analysis...</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.875rem;">Health Score out of 100</p>
+                    </div>
+                </div>
+
+                <div class="nutrition-grid" aria-label="Nutritional Breakdown">
+                    <div class="nutrition-card">
+                        <div class="value" id="val-cals">--</div>
+                        <div class="label">Calories</div>
+                    </div>
+                    <div class="nutrition-card">
+                        <div class="value" id="val-protein">--</div>
+                        <div class="label">Protein (g)</div>
+                    </div>
+                    <div class="nutrition-card">
+                        <div class="value" id="val-carbs">--</div>
+                        <div class="label">Carbs (g)</div>
+                    </div>
+                    <div class="nutrition-card">
+                        <div class="value" id="val-fat">--</div>
+                        <div class="label">Fat (g)</div>
+                    </div>
+                    <div class="nutrition-card">
+                        <div class="value" id="val-fiber">--</div>
+                        <div class="label">Fiber (g)</div>
+                    </div>
+                </div>
+
+                <div class="feedback-section">
+                    <h4>👍 Positive Aspects</h4>
+                    <ul id="list-positives"></ul>
+                </div>
+
+                <div class="feedback-section">
+                    <h4>💡 Areas for Improvement</h4>
+                    <ul id="list-improvements"></ul>
+                </div>
+
+                <div class="recommendation" id="text-recommendation">
+                    --
+                </div>
+            </section>
+
+            <!-- Meal History -->
+            <section class="card" aria-labelledby="history-heading">
+                <h2 id="history-heading">Recent Meals</h2>
+                <div class="history-list" id="history-list" aria-live="polite">
+                    <p style="color: var(--text-secondary);">Loading history...</p>
+                </div>
+            </section>
+        </div>
+        </div> <!-- End Tab 1 -->
+
+        <!-- TAB 2: Pantry Chef -->
+        <div id="tab-pantry" class="tab-content single-col">
+            <section class="card" aria-labelledby="pantry-heading">
+                <h2 id="pantry-heading">Pantry Chef 👨‍🍳</h2>
+                <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">Tell me what ingredients you have, and I'll generate a healthy recipe for you.</p>
+                
+                <div id="pantry-error" aria-live="assertive" role="alert" style="display:none; color: var(--danger-color); padding: 1rem; background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius-md); margin-bottom: 1rem;"></div>
+
+                <form id="pantry-form" novalidate>
+                    <div class="form-group">
+                        <label for="ingredients">What ingredients do you have?</label>
+                        <textarea id="ingredients" name="ingredients" rows="3" 
+                                  placeholder="e.g., eggs, spinach, feta cheese, whole wheat bread"
+                                  aria-required="true"></textarea>
+                    </div>
+
+                    <button type="submit" id="pantry-submit-btn">
+                        <span id="pantry-btn-text">Suggest a Recipe</span>
+                        <div class="loader" id="pantry-loader"></div>
+                    </button>
+                </form>
+            </section>
+
+            <section class="card" id="recipe-results" style="display: none; margin-top: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                    <h2 id="recipe-name" style="margin-bottom: 0; color: var(--primary-accent);">Recipe Name</h2>
+                    <div class="history-score" id="recipe-health-score" style="background-color: var(--success-color); color: white; font-size: 1.25rem;">95% Healthy</div>
+                </div>
+
+                <div class="nutrition-grid" aria-label="Nutritional Breakdown">
+                    <div class="nutrition-card"><div class="value" id="r-cals">--</div><div class="label">Calories</div></div>
+                    <div class="nutrition-card"><div class="value" id="r-protein">--</div><div class="label">Protein (g)</div></div>
+                    <div class="nutrition-card"><div class="value" id="r-carbs">--</div><div class="label">Carbs (g)</div></div>
+                    <div class="nutrition-card"><div class="value" id="r-fat">--</div><div class="label">Fat (g)</div></div>
+                    <div class="nutrition-card"><div class="value" id="r-fiber">--</div><div class="label">Fiber (g)</div></div>
+                </div>
+
+                <div class="recommendation" style="margin-bottom: 1.5rem; border-left-color: var(--success-color); background-color: #ecfdf5; color: #065f46;">
+                    <strong style="display:block; margin-bottom: 0.5rem;">Why it's healthy:</strong>
+                    <span id="recipe-why">--</span>
+                </div>
+
+                <div class="feedback-section">
+                    <h4>🍳 Instructions</h4>
+                    <ol id="recipe-instructions" style="padding-left: 1.5rem; color: var(--text-secondary); line-height: 1.8;"></ol>
+                </div>
+            </section>
+        </div> <!-- End Tab 2 -->
+    </main>
+
+    <footer>
+        <p>&copy; 2026 NutriSense AI. Helping you build healthier habits.</p>
+    </footer>
+
+    <script>
+        const USER_ID = "guest-user-123";
+        const API_BASE = "/api";
+
+        const form = document.getElementById('meal-form');
+        const submitBtn = document.getElementById('submit-btn');
+        const btnText = document.getElementById('btn-text');
+        const loader = document.getElementById('loader');
+        const errorMsg = document.getElementById('error-message');
+        const resultsContainer = document.getElementById('results-container');
+        const historyList = document.getElementById('history-list');
+
+        // Color mapping for scores
+        function getScoreColor(score) {
+            if (score >= 70) return 'var(--success-color)';
+            if (score >= 40) return 'var(--warning-color)';
+            return 'var(--danger-color)';
+        }
+
+        function getScoreText(score) {
+            if (score >= 70) return 'Excellent choice!';
+            if (score >= 40) return 'Fair choice.';
+            return 'Needs improvement.';
+        }
+
+        function showError(message) {
+            errorMsg.textContent = message;
+            errorMsg.style.display = 'block';
+            setTimeout(() => {
+                errorMsg.style.display = 'none';
+            }, 8000);
+        }
+
+        async function fetchHistory() {
+            try {
+                const response = await fetch(`${API_BASE}/history/${USER_ID}`);
+                if (!response.ok) throw new Error('Failed to fetch history');
+                
+                const data = await response.json();
+                
+                if (data.length === 0) {
+                    historyList.innerHTML = '<p style="color: var(--text-secondary);">No meals logged yet.</p>';
+                    return;
+                }
+
+                // Show up to 5 recent meals
+                historyList.innerHTML = '';
+                data.slice(0, 5).forEach(meal => {
+                    const score = meal.analysis?.health_score || 0;
+                    const color = getScoreColor(score);
+                    
+                    const div = document.createElement('div');
+                    div.className = 'history-item';
+                    div.innerHTML = `
+                        <div class="history-item-info">
+                            <h4>${meal.meal_description}</h4>
+                            <p>${meal.meal_type} &bull; ${meal.analysis?.nutrition?.calories || 0} kcal</p>
+                        </div>
+                        <div class="history-score" style="background-color: ${color}20; color: ${color};">
+                            ${score}/100
+                        </div>
+                    `;
+                    historyList.appendChild(div);
+                });
+
+            } catch (err) {
+                console.error(err);
+                historyList.innerHTML = '<p style="color: var(--danger-color);">Error loading history.</p>';
+            }
+        }
+
+        async function fetchDashboardSummary() {
+            try {
+                const response = await fetch(`${API_BASE}/summary/${USER_ID}`);
+                if (!response.ok) throw new Error('Failed to fetch summary');
+                
+                const data = await response.json();
+                
+                const dashboardGrid = document.getElementById('dashboard-grid');
+                
+                let trendIcon = '➖';
+                let trendText = 'Stable';
+                let trendColorClass = 'trend';
+                if (data.trend === 'improving') { trendIcon = '📈'; trendText = 'Improving'; }
+                if (data.trend === 'declining') { trendIcon = '📉'; trendText = 'Declining'; trendColorClass = 'worst'; }
+
+                dashboardGrid.innerHTML = `
+                    <div class="stat-card health">
+                        <div class="stat-label">Avg Health Score</div>
+                        <div class="stat-value" style="color: ${getScoreColor(data.avg_score)}">${data.avg_score}</div>
+                        <div class="stat-subtext">out of 100</div>
+                    </div>
+                    <div class="stat-card ${trendColorClass}">
+                        <div class="stat-label">Overall Trend</div>
+                        <div class="stat-value">${trendIcon}</div>
+                        <div class="stat-subtext">${trendText}</div>
+                    </div>
+                    <div class="stat-card best">
+                        <div class="stat-label">Best Meal</div>
+                        <div class="stat-value" style="font-size: 1.25rem;">${data.best_meal || '--'}</div>
+                        <div class="stat-subtext">Highest score</div>
+                    </div>
+                    <div class="stat-card worst">
+                        <div class="stat-label">Needs Work</div>
+                        <div class="stat-value" style="font-size: 1.25rem;">${data.worst_meal || '--'}</div>
+                        <div class="stat-subtext">Lowest score</div>
+                    </div>
+                `;
+            } catch (err) {
+                console.error(err);
+                document.getElementById('dashboard-grid').innerHTML = '<p style="color: var(--danger-color);">Error loading dashboard.</p>';
+            }
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const mealType = document.getElementById('meal_type').value;
+            const mealDesc = document.getElementById('meal_description').value.trim();
+
+            if (mealDesc.length < 3) {
+                showError("Please enter a valid meal description (at least 3 characters).");
+                return;
+            }
+
+            // UI Loading state
+            submitBtn.disabled = true;
+            btnText.textContent = 'Analyzing...';
+            loader.style.display = 'inline-block';
+            errorMsg.style.display = 'none';
+
+            try {
+                // 1. Analyze Meal
+                const analyzeRes = await fetch(`${API_BASE}/analyze`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        meal_description: mealDesc,
+                        user_id: USER_ID,
+                        meal_type: mealType
+                    })
+                });
+
+                if (!analyzeRes.ok) {
+                    const errData = await analyzeRes.json();
+                    throw new Error(errData.detail || 'Analysis failed.');
+                }
+
+                const analysis = await analyzeRes.json();
+
+                // 2. Display Results
+                displayResults(analysis);
+
+                // 3. Log Meal to Firestore
+                const logRes = await fetch(`${API_BASE}/log`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: USER_ID,
+                        meal_description: mealDesc,
+                        meal_type: mealType,
+                        analysis: analysis
+                    })
+                });
+
+                if (logRes.ok) {
+                    // Refresh history and dashboard
+                    fetchHistory();
+                    fetchDashboardSummary();
+                    document.getElementById('meal_description').value = '';
+                } else {
+                    console.warn("Failed to log meal to history");
+                }
+
+            } catch (err) {
+                showError(err.message);
+            } finally {
+                submitBtn.disabled = false;
+                btnText.textContent = 'Analyze Meal';
+                loader.style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            resultsContainer.style.display = 'block';
+            
+            const scoreBadge = document.getElementById('health-score-badge');
+            scoreBadge.textContent = data.health_score;
+            scoreBadge.style.backgroundColor = getScoreColor(data.health_score);
+            
+            document.getElementById('score-text').textContent = getScoreText(data.health_score);
+            
+            document.getElementById('val-cals').textContent = data.nutrition.calories;
+            document.getElementById('val-protein').textContent = data.nutrition.protein_g;
+            document.getElementById('val-carbs').textContent = data.nutrition.carbs_g;
+            document.getElementById('val-fat').textContent = data.nutrition.fat_g;
+            document.getElementById('val-fiber').textContent = data.nutrition.fiber_g;
+
+            const posList = document.getElementById('list-positives');
+            posList.innerHTML = data.positive_aspects.map(p => `<li>${p}</li>`).join('');
+
+            const impList = document.getElementById('list-improvements');
+            impList.innerHTML = data.improvements.map(i => `<li>${i}</li>`).join('');
+
+            document.getElementById('text-recommendation').textContent = data.recommendation;
+            
+            // Scroll to results on mobile
+            if (window.innerWidth < 1024) {
+                resultsContainer.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+
+        form.addEventListener('submit', handleFormSubmit);
+
+        // Tab logic
+        const btnLogMeal = document.getElementById('btn-log-meal');
+        const btnPantry = document.getElementById('btn-pantry');
+        const tabLogMeal = document.getElementById('tab-log-meal');
+        const tabPantry = document.getElementById('tab-pantry');
+
+        btnLogMeal.addEventListener('click', () => {
+            btnLogMeal.classList.add('active');
+            btnPantry.classList.remove('active');
+            tabLogMeal.classList.add('active');
+            tabPantry.classList.remove('active');
+        });
+
+        btnPantry.addEventListener('click', () => {
+            btnPantry.classList.add('active');
+            btnLogMeal.classList.remove('active');
+            tabPantry.classList.add('active');
+            tabLogMeal.classList.remove('active');
+        });
+
+        // Pantry Chef logic
+        const pantryForm = document.getElementById('pantry-form');
+        const pantrySubmitBtn = document.getElementById('pantry-submit-btn');
+        const pantryBtnText = document.getElementById('pantry-btn-text');
+        const pantryLoader = document.getElementById('pantry-loader');
+        const pantryError = document.getElementById('pantry-error');
+        const recipeResults = document.getElementById('recipe-results');
+
+        pantryForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const ingredients = document.getElementById('ingredients').value.trim();
+
+            if (ingredients.length < 3) {
+                pantryError.textContent = "Please enter some ingredients.";
+                pantryError.style.display = 'block';
+                return;
+            }
+
+            pantrySubmitBtn.disabled = true;
+            pantryBtnText.textContent = 'Cooking up ideas...';
+            pantryLoader.style.display = 'inline-block';
+            pantryError.style.display = 'none';
+
+            try {
+                const res = await fetch(`${API_BASE}/suggest-recipe`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ingredients: ingredients, user_id: USER_ID })
+                });
+
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.detail || 'Failed to suggest recipe.');
+                }
+
+                const data = await res.json();
+                
+                // Display recipe
+                recipeResults.style.display = 'block';
+                document.getElementById('recipe-name').textContent = data.recipe_name;
+                
+                const scoreBadge = document.getElementById('recipe-health-score');
+                scoreBadge.textContent = `${data.health_percentage}% Healthy`;
+                scoreBadge.style.backgroundColor = getScoreColor(data.health_percentage);
+
+                document.getElementById('r-cals').textContent = data.nutrition.calories;
+                document.getElementById('r-protein').textContent = data.nutrition.protein_g;
+                document.getElementById('r-carbs').textContent = data.nutrition.carbs_g;
+                document.getElementById('r-fat').textContent = data.nutrition.fat_g;
+                document.getElementById('r-fiber').textContent = data.nutrition.fiber_g;
+
+                document.getElementById('recipe-why').textContent = data.why_its_healthy;
+
+                const instList = document.getElementById('recipe-instructions');
+                instList.innerHTML = data.instructions.map(i => `<li style="margin-bottom:0.5rem">${i}</li>`).join('');
+
+            } catch (err) {
+                pantryError.textContent = err.message;
+                pantryError.style.display = 'block';
+            } finally {
+                pantrySubmitBtn.disabled = false;
+                pantryBtnText.textContent = 'Suggest a Recipe';
+                pantryLoader.style.display = 'none';
+            }
+        });
+
+        // Initial load
+        fetchHistory();
+        fetchDashboardSummary();
+
+    </script>
+</body>
+</html>
